@@ -1,3 +1,4 @@
+import { requireOptionalNativeModule } from 'expo';
 import { Platform } from 'react-native';
 
 import { getDeviceId } from '@/utils/device-id';
@@ -12,10 +13,11 @@ export type LoginDeviceInfo = {
 const readIpAddress = async (): Promise<string | null> => {
   // On web expo-network asks a third-party service (ipify) for the public IP; skip it there.
   if (Platform.OS === 'web') return null;
+  // A build made before expo-network was added has no native module for it. Importing the package
+  // anyway throws (and Expo logs it as an error), so ask for the native module first, quietly, and
+  // leave the IP out when it is missing. Rebuild the app (`npx expo run:android`) to get it.
+  if (!requireOptionalNativeModule('ExpoNetwork')) return null;
   try {
-    // Loaded on demand, not at the top of the file: a build made before expo-network was added has
-    // no native module for it, and a top-level import would crash the app at startup. Here the
-    // failure is caught and the IP is simply left out.
     const Network = await import('expo-network');
     const ip = await Network.getIpAddressAsync();
     return ip && ip !== '0.0.0.0' ? ip : null;
