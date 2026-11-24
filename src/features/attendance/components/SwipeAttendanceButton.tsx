@@ -18,6 +18,8 @@ type Props = {
   /** Check in uses the success green (go); check out uses the amber accent (leave). */
   tone?: 'success' | 'secondary';
   disabled?: boolean;
+  /** What the locked track says. */
+  disabledLabel?: string;
   onComplete: () => void;
 };
 
@@ -88,7 +90,7 @@ function ShimmerText({ text, color, active, dim = 0.55 }: { text: string; color:
 const THUMB = 52;
 const INSET = 4;
 
-export function SwipeAttendanceButton({ label, tone = 'success', disabled, onComplete }: Props) {
+export function SwipeAttendanceButton({ label, tone = 'success', disabled, disabledLabel, onComplete }: Props) {
   const { colors } = useAppTheme();
   const translateX = useRef(new Animated.Value(0)).current;
   const [trackWidth, setTrackWidth] = useState(0);
@@ -145,7 +147,7 @@ export function SwipeAttendanceButton({ label, tone = 'success', disabled, onCom
     >
       <Animated.View style={[styles.hintWrap, { opacity: hintOpacity }]} pointerEvents="none">
         <ShimmerText
-          text={disabled ? 'Not available right now' : `Swipe to ${label.toLowerCase()}`}
+          text={disabled ? (disabledLabel ?? 'Not available right now') : `Swipe to ${label.toLowerCase()}`}
           color={disabled ? colors.textMuted : colors.onPrimary}
           dim={0.7}
           active={!disabled}

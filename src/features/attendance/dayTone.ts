@@ -21,17 +21,18 @@ export type ToneStyle = {
 };
 
 /**
- * Calendar look per tone. On time is plain paper and ink, so a good month is quiet; absent is the
- * only solid colour, so it is the first thing the eye finds.
+ * Calendar look per tone. All three states are light tints: on time is green, late or early is
+ * amber, absent is red. The colour tells them apart; none is solid.
  */
 export const toneStyle = (tone: DayTone, colors: ThemeColorPalette): ToneStyle => {
   switch (tone) {
     case 'good':
-      return { background: colors.surface, border: colors.border, text: colors.text, borderStyle: 'solid' };
+      return { background: colors.successLight, border: colors.successBorder, text: colors.successText, borderStyle: 'solid' };
     case 'warn':
       return { background: colors.secondaryLight, border: colors.secondaryBorder, text: colors.secondaryText, borderStyle: 'solid' };
     case 'bad':
-      return { background: colors.error, border: colors.error, text: colors.onError, borderStyle: 'solid' };
+      // A step lighter than errorBorder, with a softer outline, so absent days read as red without shouting.
+      return { background: '#F7D3D9', border: '#E8909E', text: colors.errorText, borderStyle: 'solid' };
     case 'off':
       return { background: 'transparent', border: 'transparent', text: colors.textMuted, borderStyle: 'solid' };
     default:

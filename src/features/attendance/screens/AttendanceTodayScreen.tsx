@@ -8,13 +8,15 @@ import {
   createAttendanceIdempotencyKey,
   getAttendanceToday,
   punchAttendance,
+  uploadAttendancePhoto,
 } from '@/api/attendance';
-import { AttendanceHeader } from '@/components/header/attendance-header';
+import { HeaderBack } from '@/components/header/header-back';
 import { ThemedText } from '@/components/app-themed-text';
 import { StatStrip } from '@/components/ui/stat-strip';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useTabBarHeight } from '@/hooks/use-tab-bar-height';
 import { ShiftTimeline } from '@/features/attendance/components/ShiftTimeline';
+import { SelfieCapture } from '@/features/attendance/components/SelfieCapture';
 import { SwipeAttendanceButton } from '@/features/attendance/components/SwipeAttendanceButton';
 import { captureAttendanceLocation } from '@/features/attendance/location';
 import {
@@ -51,6 +53,7 @@ export default function AttendanceTodayScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
 
   const load = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -72,6 +75,7 @@ export default function AttendanceTodayScreen() {
 
   const submitPunch = async () => {
     if (!attendance?.session?.allowedAction || attendance.session.allowedAction === 'NONE') return;
+    if (!photoUri) return;
     setSubmitting(true);
     setError(null);
     const idempotencyKey = createAttendanceIdempotencyKey();
@@ -80,9 +84,12 @@ export default function AttendanceTodayScreen() {
       const location = attendance.location.requiresCurrentLocation || attendance.location.mode !== 'ANY'
         ? await captureAttendanceLocation()
         : undefined;
-      const payload = await buildPunchPayload(idempotencyKey, location ?? null);
+      const photoPath = await uploadAttendancePhoto(photoUri);
+      const payload = await buildPunchPayload(idempotencyKey, location ?? null, photoPath);
       const result = await punchAttendance(payload);
       setAttendance(result);
+      // A new photo is taken for every punch, accepted or not.
+      setPhotoUri(null);
       if (!result.accepted) setError(result.message ?? 'Attendance action was not accepted.');
     } catch (punchError) {
       setError(attendanceErrorMessage(punchError));
@@ -98,7 +105,7 @@ export default function AttendanceTodayScreen() {
   const late = attendance?.summary?.lateMinutes ?? 0;
   const early = attendance?.summary?.earlyLeaveMinutes ?? 0;
 
-  const [clockTime, clockMeridiem] = formatClockTime(now.toISOString(), tz).split(' ');
+  const [clockTime, clockMeridiem] = formatClockTime(now.toISOString(), tz).split(/\s+/);
   const startMs = toMs(attendance?.schedule?.startAt);
   const endMs = toMs(attendance?.schedule?.endAt);
   const hasTimeline = Number.isFinite(startMs) && Number.isFinite(endMs) && endMs > startMs;
@@ -116,7 +123,7 @@ export default function AttendanceTodayScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      <AttendanceHeader title="Attendance" />
+      <HeaderBack title="Attendance" />
       {loading ? (
         <View style={styles.center}><ActivityIndicator color={colors.primary} size="large" /></View>
       ) : (
@@ -185,12 +192,15 @@ export default function AttendanceTodayScreen() {
 
               {canPunch ? (
                 <View style={styles.action}>
+                  <SelfieCapture photoUri={photoUri} onCapture={setPhotoUri} disabled={submitting} />
                   {submitting ? (
                     <View style={styles.submitting}><ActivityIndicator color={colors.primary} /></View>
                   ) : (
                     <SwipeAttendanceButton
                       label={action === 'CHECK_IN' ? 'Check in' : 'Check out'}
                       tone={action === 'CHECK_IN' ? 'success' : 'secondary'}
+                      disabled={!photoUri}
+                      disabledLabel="Take your photo first"
                       onComplete={submitPunch}
                     />
                   )}

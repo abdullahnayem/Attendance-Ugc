@@ -17,7 +17,10 @@ const dayNumber = (workDate: string): number => {
 /** One calendar day. `item` is missing when the server has no record for that date. */
 export type CalendarDay = { date: string; item?: AttendanceHistoryItem };
 
-type Cell = { key: string; day: number; tone: DayTone } | null;
+// Same amber as the admin panel's "edited by admin" dot.
+const EDITED_DOT = '#F59E0B';
+
+type Cell = { key: string; day: number; tone: DayTone; manual: boolean } | null;
 
 const LEGEND: { tone: DayTone; label: string }[] = [
   { tone: 'good', label: 'On time' },
@@ -27,8 +30,8 @@ const LEGEND: { tone: DayTone; label: string }[] = [
 ];
 
 /**
- * The loaded days laid out as a real calendar (Sunday first). On time is a white tile with black
- * ink, absent is solid red, everything else stays quiet. One glance answers "how has my month
+ * The loaded days laid out as a real calendar (Sunday first). On time is a light green tile,
+ * late or early light amber, absent light red, everything else stays quiet. One glance answers "how has my month
  * been" before the list answers "what exactly happened".
  */
 export function AttendanceCalendar({ days, summary }: { days: CalendarDay[]; summary: string }) {
@@ -49,7 +52,7 @@ export function AttendanceCalendar({ days, summary }: { days: CalendarDay[]; sum
       const entry = byDay.get(d);
       const tone = entry?.item ? toneOf(entry.item) : 'idle';
       tally[tone] += 1;
-      grid.push({ key: String(d), day: new Date(d * DAY_MS).getUTCDate(), tone });
+      grid.push({ key: String(d), day: new Date(d * DAY_MS).getUTCDate(), tone, manual: Boolean(entry?.item?.manual) });
     }
     return { cells: grid, counts: tally };
   }, [days]);
@@ -84,6 +87,7 @@ export function AttendanceCalendar({ days, summary }: { days: CalendarDay[]; sum
                 >
                   {cell.day}
                 </ThemedText>
+                {cell.manual ? <View style={[styles.editDot, { backgroundColor: EDITED_DOT }]} /> : null}
               </View>
             </View>
           );
@@ -112,6 +116,10 @@ export function AttendanceCalendar({ days, summary }: { days: CalendarDay[]; sum
             </View>
           );
         })}
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: EDITED_DOT }]} />
+          <ThemedText style={[styles.legendText, { color: colors.textSecondary }]}>Edited by admin</ThemedText>
+        </View>
       </View>
     </View>
   );
@@ -124,11 +132,13 @@ const styles = StyleSheet.create({
   slot: { width: `${100 / 7}%`, padding: 3 },
   weekday: { fontSize: 12, textAlign: 'center', paddingBottom: 2 },
   day: { aspectRatio: 1, borderRadius: 11, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  editDot: { position: 'absolute', top: 4, right: 4, width: 6, height: 6, borderRadius: 3 },
   dayText: { fontSize: 14, fontVariant: ['tabular-nums'] },
   legend: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 8, marginTop: 12, paddingHorizontal: 4 },
   // Two columns, so the legend reads as a tidy block instead of a ragged line.
   legendItem: { width: '50%', flexDirection: 'row', alignItems: 'center', gap: 6 },
   swatch: { width: 12, height: 12, borderRadius: 4, borderWidth: 1 },
+  legendDot: { width: 6, height: 6, borderRadius: 3, marginHorizontal: 3 },
   legendText: { fontSize: 12 },
   legendCount: { fontSize: 12, fontVariant: ['tabular-nums'] },
 });

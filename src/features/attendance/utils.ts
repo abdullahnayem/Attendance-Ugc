@@ -69,13 +69,14 @@ export const attendanceErrorMessage = (error: unknown): string => {
   const axiosError = error as AxiosError<{
     code?: string;
     message?: string | string[];
+    detail?: string; // ASP.NET ProblemDetails (Nexus) puts the text here
     error?: string;
   }>;
   const responseData = axiosError.response?.data;
   const code = responseData?.code;
   const message = Array.isArray(responseData?.message)
     ? responseData.message.join(', ')
-    : responseData?.message;
+    : responseData?.message ?? responseData?.detail;
 
   const messages: Record<string, string> = {
     ATTENDANCE_UNAUTHENTICATED: 'Your session has expired. Please sign in again.',
@@ -83,6 +84,7 @@ export const attendanceErrorMessage = (error: unknown): string => {
     ATTENDANCE_CONFIGURATION_INVALID: 'Attendance is not configured for your account. Contact HR.',
     ATTENDANCE_INVALID_PAGING: 'The attendance history request is invalid. Please try again.',
     ATTENDANCE_INVALID_IDEMPOTENCY_KEY: 'This attendance attempt could not be identified. Please try again.',
+    ATTENDANCE_PHOTO_REQUIRED: 'Take a photo of yourself to record attendance.',
     ATTENDANCE_INVALID_LOCATION: 'The current location could not be validated. Please try again.',
     NO_ACTIVE_SCHEDULE: 'No attendance schedule is assigned for today. Contact HR if this looks incorrect.',
     LOCATION_PERMISSION_DENIED: 'Location permission is required for attendance under your current policy.',
@@ -160,7 +162,8 @@ export const formatClockTime = (
     hour: '2-digit',
     minute: '2-digit',
     hour12: true,
-  }).format(date);
+    // Newer engines put a narrow no-break space (U+202F) before AM/PM; use a plain space so it splits and wraps predictably.
+  }).format(date).replace(/\s/g, ' ');
 };
 
 /** Local calendar date -> `YYYY-MM-DD` (never shifted by UTC). */

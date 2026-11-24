@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/app-themed-text';
@@ -16,61 +16,53 @@ export function LoginScreen() {
   return (
     <KeyboardAvoidingView
       style={[styles.screen, { backgroundColor: colors.primary }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      // Android is edge-to-edge, so the OS no longer resizes the window for the keyboard.
+      behavior="padding"
     >
       {/* The hero behind the status bar is the brand colour, so the icons must be light. */}
       <StatusBar style="light" />
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-        bounces={false}
+      <LoginHeader />
+
+      <View
+        style={[
+          styles.sheet,
+          { backgroundColor: colors.surface, paddingBottom: insets.bottom + 28 },
+        ]}
       >
-        <LoginHeader />
+        <ThemedText weight="extraBold" style={[styles.title, { color: colors.text }]}>
+          Sign in
+        </ThemedText>
+        <ThemedText weight="regular" style={[styles.subtitle, { color: colors.textSecondary }]}>
+          Use your work account to punch in and out.
+        </ThemedText>
 
-        <View
-          style={[
-            styles.sheet,
-            { backgroundColor: colors.surface, paddingBottom: insets.bottom + 28 },
-          ]}
-        >
-          <ThemedText weight="extraBold" style={[styles.title, { color: colors.text }]}>
-            Sign in
-          </ThemedText>
-          <ThemedText weight="regular" style={[styles.subtitle, { color: colors.textSecondary }]}>
-            Use your work account to punch in and out.
-          </ThemedText>
-
-          <LoginForm
-            email={login.email}
-            password={login.password}
-            showPassword={login.showPassword}
-            rememberMe={login.rememberMe}
-            isLoading={login.isLoading}
-            error={login.error}
-            onEmailChange={(value) => {
-              login.clearError();
-              login.setEmail(value);
-            }}
-            onPasswordChange={(value) => {
-              login.clearError();
-              login.setPassword(value);
-            }}
-            onTogglePassword={() => login.setShowPassword((v) => !v)}
-            onToggleRememberMe={() => login.setRememberMe((v) => !v)}
-            onLogin={login.handleLogin}
-          />
-        </View>
-      </ScrollView>
+        <LoginForm
+          email={login.email}
+          password={login.password}
+          showPassword={login.showPassword}
+          rememberMe={login.rememberMe}
+          isLoading={login.isLoading}
+          error={login.error}
+          onEmailChange={(value) => {
+            login.clearError();
+            login.setEmail(value);
+          }}
+          onPasswordChange={(value) => {
+            login.clearError();
+            login.setPassword(value);
+          }}
+          onTogglePassword={() => login.setShowPassword((v) => !v)}
+          onToggleRememberMe={() => login.setRememberMe((v) => !v)}
+          onLogin={login.handleLogin}
+        />
+      </View>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  scroll: { flexGrow: 1 },
   sheet: {
-    flexGrow: 1,
     marginTop: -36,
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,

@@ -71,7 +71,12 @@ export function useLogin() {
     try {
       // Phone id + IP travel with the credentials; getLoginDeviceInfo never throws.
       const deviceInfo = await getLoginDeviceInfo();
-      const response = await primaryApi.post('/v1/auth/login', { loginName, password, ...deviceInfo });
+      const response = await primaryApi.post('/v1/auth/login', {
+        loginName,
+        email: loginName, // Nexus reads `email`
+        password,
+        ...deviceInfo,
+      });
       const data = response.data as AuthApiResponse;
 
       if (response.status !== 200) {

@@ -50,6 +50,7 @@ function RootStack() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Protected guard={isAuthenticated}>
         <Stack.Screen name="index" />
+        <Stack.Screen name="attendance" />
         <Stack.Screen name="history" />
       </Stack.Protected>
       <Stack.Protected guard={!isAuthenticated}>

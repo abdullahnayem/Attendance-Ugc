@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
 import { getAttendanceHistory, getAttendanceToday } from '@/api/attendance';
@@ -8,17 +8,13 @@ import { ThemedText } from '@/components/app-themed-text';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useTabBarHeight } from '@/hooks/use-tab-bar-height';
 import { AttendanceTable } from '@/features/attendance/components/AttendanceTable';
-import { DateRangeFilter, type DateRange } from '@/features/attendance/components/DateRangeFilter';
-import {
-  attendanceErrorMessage,
-  formatTableDate,
-  presetRange,
-  toIsoDate,
-  type RangePreset,
-} from '@/features/attendance/utils';
+import { currentMonth, MonthPicker, monthRange, type MonthValue } from '@/features/attendance/components/MonthPicker';
+import { attendanceErrorMessage, toIsoDate } from '@/features/attendance/utils';
 import type { AttendanceHistoryItem } from '@/types/attendance';
 
 const PAGE_SIZE = 31;
+
+type DateRange = { from: string; to: string };
 
 /**
  * History only lists days the server has already recorded, so a day with no punch yet is missing.
@@ -40,9 +36,8 @@ async function withToday(range: DateRange, items: AttendanceHistoryItem[]): Prom
 export default function AttendanceHistoryScreen() {
   const { colors } = useAppTheme();
   const tabBarHeight = useTabBarHeight();
-  const [applied, setApplied] = useState<DateRange>(() => presetRange('thisMonth'));
-  const [draft, setDraft] = useState<DateRange>(applied);
-  const [activePreset, setActivePreset] = useState<RangePreset | null>('thisMonth');
+  const [month, setMonth] = useState<MonthValue>(currentMonth);
+  const applied = useMemo(() => monthRange(month), [month]);
   const [items, setItems] = useState<AttendanceHistoryItem[]>([]);
   const [page, setPage] = useState(1);
   const [hasNextPage, setHasNextPage] = useState(false);
@@ -82,20 +77,6 @@ export default function AttendanceHistoryScreen() {
     void load(applied, 1, 'replace');
   }, [applied, load]);
 
-  const search = () => {
-    if (draft.from > draft.to) return;
-    setActivePreset(null);
-    if (draft.from === applied.from && draft.to === applied.to) void load(draft, 1, 'replace');
-    else setApplied(draft);
-  };
-
-  const choosePreset = (preset: RangePreset) => {
-    const range = presetRange(preset);
-    setActivePreset(preset);
-    setDraft(range);
-    setApplied(range);
-  };
-
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <HeaderBack title="Attendance history" />
@@ -106,21 +87,7 @@ export default function AttendanceHistoryScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={() => load(applied, 1, 'refresh')} tintColor={colors.primary} />
         }
       >
-        <DateRangeFilter
-          draft={draft}
-          onDraftChange={(range) => {
-            setDraft(range);
-            setActivePreset(null);
-          }}
-          onSearch={search}
-          onPreset={choosePreset}
-          activePreset={activePreset}
-          searching={loading}
-        />
-
-        <ThemedText style={[styles.range, { color: colors.textSecondary }]} weight="medium">
-          {formatTableDate(applied.from)} to {formatTableDate(applied.to)}
-        </ThemedText>
+        <MonthPicker value={month} onChange={setMonth} />
 
         {error ? (
           <View style={[styles.banner, { backgroundColor: colors.errorLight, borderColor: colors.errorBorder }]}>
@@ -140,9 +107,9 @@ export default function AttendanceHistoryScreen() {
             <View style={[styles.emptyIcon, { backgroundColor: colors.primaryLight }]}>
               <Ionicons name="calendar-clear-outline" size={26} color={colors.primaryText} />
             </View>
-            <ThemedText weight="bold" style={styles.emptyTitle}>No records in this range</ThemedText>
+            <ThemedText weight="bold" style={styles.emptyTitle}>No records this month</ThemedText>
             <ThemedText style={[styles.emptyBody, { color: colors.textSecondary }]}>
-              Pick different dates, or choose a quick range above.
+              Use the arrows above to look at another month.
             </ThemedText>
           </View>
         ) : null}
@@ -170,7 +137,6 @@ export default function AttendanceHistoryScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { paddingHorizontal: 16, paddingTop: 12, gap: 14 },
-  range: { fontSize: 13, paddingHorizontal: 4 },
   center: { paddingVertical: 48, alignItems: 'center' },
   banner: { borderWidth: 1, borderRadius: 14, padding: 12, gap: 8 },
   empty: { borderWidth: 1, borderRadius: 20, padding: 24, alignItems: 'center', gap: 8 },
