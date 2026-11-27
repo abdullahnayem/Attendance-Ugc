@@ -1,10 +1,5 @@
-import { AttendanceGuard } from '@/features/attendance/components/AttendanceGuard';
-import AttendanceTodayScreen from '@/features/attendance/screens/AttendanceTodayScreen';
+import HomeScreen from '@/features/home/screens/HomeScreen';
 
 export default function Home() {
-  return (
-    <AttendanceGuard>
-      <AttendanceTodayScreen />
-    </AttendanceGuard>
-  );
+  return <HomeScreen />;
 }

@@ -1,18 +1,20 @@
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
+import * as Device from 'expo-device';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
 import { getLoginDeviceInfo } from '@/features/auth/loginDevice';
 import { readCredentials } from '@/utils/credentials';
 
-// The Android emulator reaches the host machine at 10.0.2.2, not localhost.
+// The Android emulator reaches the host machine at 10.0.2.2, not localhost. A real phone has no 10.0.2.2: over USB,
+// `adb reverse tcp:5080 tcp:5080` makes the phone's localhost reach the PC, so the URL is left alone there.
 const resolveApiBaseUrl = (rawUrl: string | undefined): string => {
   if (!rawUrl) return '';
 
   try {
     const url = new URL(rawUrl);
 
-    if (Platform.OS === 'android') {
+    if (Platform.OS === 'android' && !Device.isDevice) {
       if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
         url.hostname = '10.0.2.2';
       }
@@ -28,6 +30,8 @@ const resolveApiBaseUrl = (rawUrl: string | undefined): string => {
 
 export const primaryApi: AxiosInstance = axios.create({
   baseURL: resolveApiBaseUrl(process.env.EXPO_PUBLIC_API_URL),
+  // Without a limit an unreachable server leaves the request (and the login spinner) waiting for ever.
+  timeout: 20000,
 });
 
 async function getAccessToken(): Promise<string | null> {
@@ -73,7 +77,11 @@ async function signInSilently(): Promise<SilentSignIn> {
   if (!credentials) return { outcome: 'rejected' };
   try {
     // Same phone id the manual login sends; the server keeps only the first one it sees.
-    const response = await primaryApi.post('/v1/auth/login', { ...credentials, ...(await getLoginDeviceInfo()) });
+    const response = await primaryApi.post('/v1/auth/login', {
+      ...credentials,
+      email: credentials.loginName, // Nexus reads `email`
+      ...(await getLoginDeviceInfo()),
+    });
     const body = response.data as { token?: string; data?: { access_token?: string } } | undefined;
     const token = body?.token ?? body?.data?.access_token;
     if (!token) return { outcome: 'rejected' };

@@ -55,6 +55,8 @@ export type AttendanceToday = {
   location: AttendanceLocation;
   session?: AttendanceSession | null;
   summary?: AttendanceSummary | null;
+  /** True when an admin set this day by hand (times typed in, or marked absent). */
+  manual?: boolean;
 };
 
 export type AttendancePunchResult = AttendanceToday & {
@@ -85,6 +87,8 @@ export type AttendancePunchPayload = {
     longitude: number;
     accuracyMeters: number | null;
   } | null;
+  /** Server path of the uploaded selfie. */
+  photoPath: string;
   deviceId: string;
   appVersion: string | null;
 };

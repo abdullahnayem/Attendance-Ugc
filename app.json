@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "AttendanceUgc",
+    "name": "Nexus Attendance",
     "slug": "AttendanceUgc",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -40,6 +40,14 @@
           "locationWhenInUsePermission": "Attendance uses your location to confirm you are at your work location when you punch in or out.",
           "isAndroidBackgroundLocationEnabled": false,
           "isIosBackgroundLocationEnabled": false
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Attendance takes a photo of you with the front camera when you check in or out.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
         }
       ],
       "@react-native-community/datetimepicker",

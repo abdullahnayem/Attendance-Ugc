@@ -14,6 +14,7 @@ import {
   formatMonthYear,
   formatWeekday,
   fromIsoDate,
+  minutesLabel,
   toIsoDate,
 } from '@/features/attendance/utils';
 import type { AttendanceHistoryItem } from '@/types/attendance';
@@ -93,8 +94,8 @@ function DayRow({ day, last, isToday }: { day: CalendarDay; last: boolean; isTod
 
   const flags: { text: string; color: string }[] = [];
   if (showTimes) {
-    if (late > 0) flags.push({ text: `${late}m late`, color: colors.secondaryDark });
-    if (early > 0) flags.push({ text: `${early}m early`, color: colors.errorText });
+    if (late > 0) flags.push({ text: `${minutesLabel(late)} late`, color: colors.secondaryDark });
+    if (early > 0) flags.push({ text: `${minutesLabel(early)} early`, color: colors.errorText });
     if (!flags.length) flags.push({ text: 'On time', color: colors.text });
   }
 
@@ -223,7 +224,7 @@ export function AttendanceTable({
           { label: 'Days present', value: String(totals.present) },
           {
             label: 'Late',
-            value: `${totals.lateMinutes}m`,
+            value: minutesLabel(totals.lateMinutes),
             note: totals.lateDays ? `${totals.lateDays} ${totals.lateDays === 1 ? 'day' : 'days'}` : undefined,
             noteColor: colors.secondaryDark,
           },

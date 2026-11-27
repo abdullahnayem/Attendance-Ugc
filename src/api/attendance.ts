@@ -76,6 +76,7 @@ const normalizeToday = (raw: any): AttendanceToday => {
       netWorkedMinutes: valueOrNull(source?.workedMinutes),
       status: valueOrNull(source?.sessionStatus),
     },
+    manual: Boolean(source?.manual),
   };
 };
 
@@ -129,13 +130,29 @@ export const getAttendanceHistory = async (
   };
 };
 
+/** Uploads the selfie and returns its server path (e.g. `/files/<id>.jpg`). */
+export const uploadAttendancePhoto = async (uri: string): Promise<string> => {
+  const form = new FormData();
+  // React Native sends a file as an object with uri, name and type.
+  form.append('file', { uri, name: 'attendance.jpg', type: 'image/jpeg' } as unknown as Blob);
+  const response = await primaryApi.post('v1/file/upload', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 60_000,
+  });
+  const path = response.data?.path;
+  if (typeof path !== 'string' || !path) throw new Error('ATTENDANCE_PHOTO_UPLOAD_FAILED');
+  return path;
+};
+
 export const buildPunchPayload = (
   idempotencyKey: string,
   location: AttendancePunchPayload['location'],
+  photoPath: string,
 ): Promise<AttendancePunchPayload> => getDeviceId().then((deviceId) => ({
   idempotencyKey,
   clientCapturedAt: new Date().toISOString(),
   location,
+  photoPath,
   deviceId,
   appVersion: Application.nativeApplicationVersion,
 }));

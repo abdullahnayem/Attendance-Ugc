@@ -39,6 +39,9 @@ const readDeviceId = async (): Promise<string | null> => {
  * cannot be read is null, and the login must still go through.
  */
 export async function getLoginDeviceInfo(): Promise<LoginDeviceInfo> {
-  const [deviceId, ipAddress] = await Promise.all([readDeviceId(), readIpAddress()]);
+  // The IP is optional: if the native call stalls, log in without it instead of waiting.
+  const ipWithin = (ms: number) =>
+    Promise.race([readIpAddress(), new Promise<null>((resolve) => setTimeout(() => resolve(null), ms))]);
+  const [deviceId, ipAddress] = await Promise.all([readDeviceId(), ipWithin(3000)]);
   return { deviceId, ipAddress };
 }
