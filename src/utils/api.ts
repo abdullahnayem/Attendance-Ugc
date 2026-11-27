@@ -30,6 +30,8 @@ const resolveApiBaseUrl = (rawUrl: string | undefined): string => {
 
 export const primaryApi: AxiosInstance = axios.create({
   baseURL: resolveApiBaseUrl(process.env.EXPO_PUBLIC_API_URL),
+  // Without a limit an unreachable server leaves the request (and the login spinner) waiting for ever.
+  timeout: 20000,
 });
 
 async function getAccessToken(): Promise<string | null> {

@@ -15,6 +15,9 @@ const REMEMBERED_EMAIL_KEY = 'rememberedEmail';
 
 function loginErrorMessage(error: unknown): string {
   if (error instanceof AxiosError) {
+    if (error.code === 'ECONNABORTED') {
+      return `Server did not answer in time (${error.config?.baseURL ?? 'no API URL'}). Check EXPO_PUBLIC_API_URL and that the backend is running.`;
+    }
     if (!error.response) {
       return "Can't reach the server. Check your connection and that EXPO_PUBLIC_API_URL points to a reachable API.";
     }

@@ -15,6 +15,7 @@ import { ThemedText } from '@/components/app-themed-text';
 import { StatStrip } from '@/components/ui/stat-strip';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useTabBarHeight } from '@/hooks/use-tab-bar-height';
+import { PunchSuccessModal, type PunchSuccess } from '@/features/attendance/components/PunchSuccessModal';
 import { ShiftTimeline } from '@/features/attendance/components/ShiftTimeline';
 import { SelfieCapture } from '@/features/attendance/components/SelfieCapture';
 import { SwipeAttendanceButton } from '@/features/attendance/components/SwipeAttendanceButton';
@@ -25,6 +26,7 @@ import {
   dayTypeLabel,
   formatClockTime,
   formatWorkDate,
+  minutesLabel,
   parseUtc,
   sentenceCase,
   workedElapsedLabel,
@@ -54,6 +56,7 @@ export default function AttendanceTodayScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [success, setSuccess] = useState<PunchSuccess | null>(null);
 
   const load = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -74,7 +77,8 @@ export default function AttendanceTodayScreen() {
   }, [load]));
 
   const submitPunch = async () => {
-    if (!attendance?.session?.allowedAction || attendance.session.allowedAction === 'NONE') return;
+    const action = attendance?.session?.allowedAction;
+    if (!attendance || !action || action === 'NONE') return;
     if (!photoUri) return;
     setSubmitting(true);
     setError(null);
@@ -90,7 +94,19 @@ export default function AttendanceTodayScreen() {
       setAttendance(result);
       // A new photo is taken for every punch, accepted or not.
       setPhotoUri(null);
-      if (!result.accepted) setError(result.message ?? 'Attendance action was not accepted.');
+      if (!result.accepted) {
+        setError(result.message ?? 'Attendance action was not accepted.');
+      } else {
+        const zone = result.timeZoneId ?? 'UTC';
+        const at = action === 'CHECK_IN' ? result.session?.firstCheckInAt : result.session?.lastCheckOutAt;
+        setSuccess({
+          action,
+          time: formatClockTime(at ?? result.serverConfirmedAt ?? new Date().toISOString(), zone),
+          lateMinutes: result.summary?.lateMinutes ?? 0,
+          earlyLeaveMinutes: result.summary?.earlyLeaveMinutes ?? 0,
+          worked: action === 'CHECK_OUT' ? workedElapsedLabel(result, Date.now()) : undefined,
+        });
+      }
     } catch (punchError) {
       setError(attendanceErrorMessage(punchError));
       await load(true);
@@ -124,6 +140,7 @@ export default function AttendanceTodayScreen() {
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <HeaderBack title="Attendance" />
+      <PunchSuccessModal success={success} onClose={() => setSuccess(null)} />
       {loading ? (
         <View style={styles.center}><ActivityIndicator color={colors.primary} size="large" /></View>
       ) : (
@@ -226,13 +243,13 @@ export default function AttendanceTodayScreen() {
                   {
                     label: 'Check in',
                     value: formatClockTime(checkInAt, tz),
-                    note: late > 0 ? `${late}m late` : checkInAt ? 'On time' : undefined,
+                    note: late > 0 ? `${minutesLabel(late)} late` : checkInAt ? 'On time' : undefined,
                     noteColor: late > 0 ? colors.secondaryDark : colors.successText,
                   },
                   {
                     label: 'Check out',
                     value: formatClockTime(checkOutAt, tz),
-                    note: early > 0 ? `${early}m early` : undefined,
+                    note: early > 0 ? `${minutesLabel(early)} early` : undefined,
                     noteColor: colors.errorText,
                   },
                   {

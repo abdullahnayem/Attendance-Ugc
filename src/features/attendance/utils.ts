@@ -235,3 +235,10 @@ export const workedElapsedLabel = (today: AttendanceToday, nowMs: number): strin
   }
   return formatElapsed(nowMs - start);
 };
+
+/** A short duration from minutes: "45m", "2h", "12h 55m". */
+export const minutesLabel = (minutes: number): string => {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return h === 0 ? `${m}m` : m === 0 ? `${h}h` : `${h}h ${m}m`;
+};

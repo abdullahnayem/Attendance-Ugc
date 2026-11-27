@@ -14,6 +14,7 @@ import {
   dayTypeLabel,
   formatClockTime,
   formatWorkDate,
+  minutesLabel,
   sentenceCase,
   workedElapsedLabel,
 } from '@/features/attendance/utils';
@@ -240,7 +241,7 @@ export default function HomeScreen() {
                 </View>
 
                 <View style={[styles.stats, { backgroundColor: colors.surfaceSecondary }]}>
-                  <Stat label="Check in" value={formatClockTime(checkInAt, tz)} note={late > 0 ? `${late}m late` : checkInAt ? 'On time' : undefined} noteColor={late > 0 ? colors.secondaryDark : colors.successText} />
+                  <Stat label="Check in" value={formatClockTime(checkInAt, tz)} note={late > 0 ? `${minutesLabel(late)} late` : checkInAt ? 'On time' : undefined} noteColor={late > 0 ? colors.secondaryDark : colors.successText} />
                   <View style={[styles.statDivider, { backgroundColor: colors.divider }]} />
                   <Stat label="Check out" value={formatClockTime(checkOutAt, tz)} />
                   <View style={[styles.statDivider, { backgroundColor: colors.divider }]} />
